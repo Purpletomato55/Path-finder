@@ -7,7 +7,30 @@
     <title>Vite App</title>
   </head>
   <body>
-    
+    <div class="input">
+      <label for="gridWidth_Input" max="100">Grid width:</label>
+      <input type="number" id="gridWidth_Input" name="gridWidth_Input"><br>
+      <label for="gridHeight_Input" max="100">Grid height:</label>
+      <input type="number" id="gridHeight_Input" name="gridHeight_Input"><br>
+      <label for="startX_Input" max="100">Start X:</label>
+      <input type="number" id="startX_Input" name="startX_Input"><br>
+      <label for="startY_Input" max="100">Start Y:</label>
+      <input type="number" id="startY_Input" name="startY_Input"><br>
+      <label for="endX_Input" max="100">End X:</label>
+      <input type="number" id="endX_Input" name="endX_Input"><br>
+      <label for="endY_Input" max="100">End Y:</label>
+      <input type="number" id="endY_Input" name="endY_Input"><br>
+      <select name="cars" id="cars">
+        <option value="DFS">Deapth-First Search</option>
+        <option value="BFS">Breadth-First Search</option>
+        <option value="Djikstra">Djikstra's</option>
+      </select>
+      <button id="clear_Button">Clear</button>
+      <br>
+      <button id="maze_Button">generateMaze</button>
+      <button id="plot_Button">Plot</button>
+      <button type="button" id="start_Button">Start</button>
+    </div>
     <div id="app"></div>
     <script type="module" src="/main.js"></script>
   </body>

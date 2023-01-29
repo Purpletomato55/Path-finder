@@ -27,7 +27,7 @@ class Demo {
     this._threejs.shadowMap.type = THREE.PCFSoftShadowMap;
     this._threejs.setPixelRatio(window.devicePixelRatio);
     this._threejs.setSize(window.innerWidth, window.innerHeight);
-
+    this.order = []
     document.body.appendChild(this._threejs.domElement);
 
     window.addEventListener('resize', () => {
@@ -41,8 +41,8 @@ class Demo {
     const far = 50000.0;
     this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
 
-    this.gridHeight = 10;
-    this.gridWidth = 10;
+    this.gridHeight = 20;
+    this.gridWidth = 20;
     this.vertices = this.gridHeight*this.gridWidth
 
     this._camera.position.set(0, this.gridHeight, 0);
@@ -58,21 +58,40 @@ class Demo {
     const material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
     const plane = new THREE.Mesh( geometry, material );
     plane.rotateX(-Math.PI / 2);
+    plane.rotateZ(-Math.PI / 2);
     plane.name = "grid"
     this._scene.add( plane );
 
     const grid = new THREE.GridHelper(this.gridHeight,this.gridWidth)    
     grid.position.set(0,.01,0)
-    this._scene.add(grid)
+    //this._scene.add(grid)
 
 
 
     this.drawWall()
     this.makeGrid()
-    this.grid[7][5].makeEnd()
-    this.grid[7][5].draw()
-    this.bfs(this.grid, this.grid[0][0], this.grid[7][5])
-    console.log(this.grid[0][1])
+    // let wall = this.grid[0][1]
+
+    // wall.makeWall()
+    // wall.draw()
+
+    let start = this.grid[2][2]
+    start.getNeighborsMaze()
+    console.log(start)
+    start.makeStart()
+    start.draw()
+
+
+    let end = this.grid[19][19]
+
+    end.makeEnd()
+    end.draw()
+
+    
+
+    this.bfs(this.grid, start, end)
+    //this.makeMaze(start)
+  
 
     const controls = new OrbitControls(
       this._camera, this._threejs.domElement);
@@ -87,25 +106,88 @@ class Demo {
     this._RAF();
   }
 
-  dfs(graph,vertex,end) {
-    if (vertex == end) {
-      return vertex
+  blackout() {
+    for (let x = 0; x<this.gridWidth; x++) {
+      for (let y = 0; y<this.gridHeight; y++) {
+        this.grid[x][y].makeWall()
+        this.grid[x][y].draw()
+      } 
     }
-    for (var i = 0; i < vertex.getNeighbors().length; i++) {
-      var result = this.dfs(this.graph,vertex.neighbors[i], end);
-      if (result != null) {
-          // We've found the goal node while going down that child
-          return result;
+  }
+
+  makeMaze(vertex) {
+    let f = 0
+    let stack = new Stack()
+    stack.add(vertex)
+    this.blackout()
+    vertex.visit()
+    vertex.reset()
+    while (!stack.isEmpty()) {
+      let cur_node=stack.remove()
+      cur_node.getNeighborsMaze()
+      let hasNeighbors = false
+      let nonVisitedNeighbors = []
+      for (let i = 0; i < cur_node.neighbors.length; i++) {
+        const element = cur_node.neighbors[i];
+        if (!element.isVisited()) {
+          hasNeighbors=true
+          nonVisitedNeighbors.push(i)
+        }     
+      }
+      if (hasNeighbors) {
+        stack.add(cur_node)
+        let num = Math.floor(Math.random()*nonVisitedNeighbors.length) 
+        let neigh = cur_node.neighbors[num]
+        cur_node.wallbetween[num].reset()
+        neigh.visit()
+        stack.add(neigh)
       }
     }
-    return null
+  }
+
+  resetGrid() {
+    for (let x = 0; x<this.gridWidth; x++) {
+      for (let y = 0; y<this.gridHeight; y++) {
+        this.grid[x][y].reset()
+        
+      } 
+    }
+  }
+
+  dfs(graph,vertex,end) {
+    let f = 0
+    let stack = new Stack()
+    stack.add(vertex)
+    while (!stack.isEmpty()) {
+      let cur_node=stack.remove()
+      this.order.push([])
+      if (cur_node!=vertex) {
+        this.order[f].push(cur_node)
+      }
+      if (!cur_node.isVisited()) {
+        cur_node.visit()
+        cur_node.getNeighbors()
+        if (cur_node!=vertex) {
+          cur_node.makePath()
+        }
+        for (let i = 0; i < cur_node.neighbors.length; i++) {
+          const element = cur_node.neighbors[i];
+          if (element == end) {
+            return
+          }
+          console.log()
+          stack.add(element)
+        }
+      }
+      f++
+    }
+    console.log(this.order)
   }
 
 
   bfs(graph,vertex,end) {
    
     let queue = new PriorityQueue();
-    this.order = []
     let f = 0
     vertex.visit()
     vertex.makeStart()
@@ -117,7 +199,6 @@ class Demo {
       this.order.push([])
       for (let i = 0; i < cur_node.neighbors.length; i++) {
         const element = cur_node.neighbors[i];
-
         if (!element.isVisited()) {
           if (element == end) {
             return
@@ -134,13 +215,12 @@ class Demo {
       f++
 
     }
-    console.log(this.order)
   }
 
   drawpoints() {
     for (let i = 0; i < this.gridWidth; i++) {
       for (let j = 0; j < this.gridHeight; j++) {
-        if ((this.grid[i][j].isDrawn)&&(this.grid[i][j].Mesh.position.y < .5)) {
+        if ((this.grid[i][j].isdrawn)&&(this.grid[i][j].Mesh.position.y < .5)) {
           this.grid[i][j].Mesh.position.y = (this.grid[i][j].Mesh.position.y + .01)
         }
       }     
@@ -195,35 +275,42 @@ class Demo {
     this._scene.add(this.dirLight);
   }
 
+  frameDraw() {
+    if(this.order && (this.iterator<this.order.length)) {
+      this.order
+      THREE.CompressedPixelFormat;
+      if (true) {
+        let greenNum = 20
+        if(this.iterator >greenNum) {
+          for (let x = 0; x<this.order[this.iterator-greenNum].length;x++) {
+            this.order[this.iterator-greenNum][x].makeClosed()
+          }
+        }
+
+        for (let x = 0; x<this.order[this.iterator].length;x++) {
+          
+          this.order[this.iterator][x].draw()
+
+        }
+        this.iterator++
+      }
+      
+    }else{
+
+    }
+
+    this.frameNum++
+  }
+
   _RAF() {
-    let p=0;
+
 
     requestAnimationFrame((t) => {
       if (this._previousRAF === null) {
         this._previousRAF = t;
       }
       
-      if(this.order && (this.iterator<this.order.length)) {
-        this.order
-        THREE.CompressedPixelFormat;
-        if (this.frameNum%(2500/(this.gridHeight*this.gridWidth)) == 0) {
-          let greenNum = 20
-          if(this.iterator >greenNum) {
-            for (let x = 0; x<this.order[this.iterator-greenNum].length;x++) {
-              console.log(this.order[this.iterator-greenNum][x])
-              this.order[this.iterator-greenNum][x].makeClosed()
-            }
-          }
-          
-          for (let x = 0; x<this.order[this.iterator].length;x++) {
-            this.order[this.iterator][x].draw()
-
-          }
-          this.iterator++
-        }
-        
-      }
-      this.frameNum++
+      this.frameDraw()
       this.drawpoints()
       this._RAF();
       this._threejs.render(this._scene, this._camera);
@@ -257,15 +344,18 @@ class Point {
     const wallmaterial = new THREE.MeshBasicMaterial( this.color );
     const wallMesh = new THREE.Mesh( wallgeometry, wallmaterial );
     this.Mesh = wallMesh
-    this.isDrawn = false
+    this.isdrawn = false
     this.grid = grid
     this.visited = false
-    
+    this.wallbetween = []
+    this.make()
   }
 
   getPosition(){
     return [this.x,this.y]
   }
+
+  
 
   isVisited() {
     return this.visited == true
@@ -299,9 +389,19 @@ class Point {
     this.visited = true
   }
 
+  resetColor() {
+    this.color = WHITE
+    this.Mesh.material.color.set('white')
+    this.isdrawn = false
+    this.Mesh.position.y = -.52
+  }
+
   reset() {
     this.color = WHITE
     this.Mesh.material.color.set('white')
+    this.isdrawn = false
+    this.Mesh.position.y = -.52
+    this.visited = false;
   }
 
   makeClosed(){
@@ -335,27 +435,53 @@ class Point {
     this.Mesh.material.color.set('purple')
   }
 
-  draw() {
-    this.Mesh.position.set(this.x-(this.totalCols/2)+.5, -0.51, -this.y+(this.totalRows/2)-.5)
+  make() {
+    this.Mesh.position.set(this.x-(this.totalCols/2)+.5, -0.52, -this.y+(this.totalRows/2)-.5)
     this.scene.add(this.Mesh)  
-    this.isDrawn = true
+  }
+
+  draw() {
+    this.isdrawn = true
   }
 
   getNeighbors(grid) {
-    if ((this.row < this.totalRows - 1) &&  (!this.grid[this.row + 1][this.col].isWall()))  { // DOWN
+    if ((this.row < this.totalRows - 1) &&  (!this.grid[this.col][this.row + 1].isWall()))  { // DOWN
       this.neighbors.push(this.grid[this.col][this.row + 1])
     }
 
-    if ((this.row > 0) &&  (!this.grid[this.row - 1][this.col].isWall())) { // UP
+    if ((this.row > 0) &&  (!this.grid[this.col][this.row - 1].isWall())) { // UP
       this.neighbors.push(this.grid[this.col][this.row - 1])
     }
 
-    if ((this.col < this.totalCols - 1) &&  (!this.grid[this.row][this.col + 1].isWall())) { // RIGHT
+    if ((this.col < this.totalCols - 1) &&  (!this.grid[this.col + 1][this.row].isWall())) { // RIGHT
       this.neighbors.push(this.grid[this.col + 1][this.row])
     }
 
-    if ((this.col > 0) && (!this.grid[this.row][this.col - 1].isWall())) { // LEFT
+    if ((this.col > 0) && (!this.grid[this.col-1][this.row].isWall())) { // LEFT
       this.neighbors.push(this.grid[this.col - 1][this.row])
+    }
+    return this.neighbors
+  }
+
+  getNeighborsMaze(grid) {
+    if ((this.row < this.totalRows - 2) &&  (!this.grid[this.col][this.row + 2].isWall()))  { // DOWN
+      this.neighbors.push(this.grid[this.col][this.row + 2])
+      this.wallbetween.push(this.grid[this.col][this.row + 1])
+    }
+
+    if ((this.row > 0) &&  (!this.grid[this.col][this.row - 2].isWall())) { // UP
+      this.neighbors.push(this.grid[this.col][this.row - 2])
+      this.wallbetween.push(this.grid[this.col][this.row - 1])
+    }
+
+    if ((this.col < this.totalCols - 1) &&  (!this.grid[this.col + 2][this.row].isWall())) { // RIGHT
+      this.neighbors.push(this.grid[this.col + 2][this.row])
+      this.wallbetween.push(this.grid[this.col + 1][this.row])
+    }
+
+    if ((this.col > 0) && (!this.grid[this.col-2][this.row].isWall())) { // LEFT
+      this.neighbors.push(this.grid[this.col - 2][this.row])
+      this.wallbetween.push(this.grid[this.col - 1][this.row])
     }
     return this.neighbors
   }
