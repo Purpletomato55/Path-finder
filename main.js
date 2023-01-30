@@ -41,66 +41,70 @@ class Demo {
     const far = 50000.0;
     this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
 
-    this.gridHeight = 20;
-    this.gridWidth = 20;
-    this.vertices = this.gridHeight*this.gridWidth
 
-    this._camera.position.set(0, this.gridHeight, 0);
+
+
     this._camera.render
 
     this._scene = new THREE.Scene();
-    
+    this.gridHeight;
+    this.gridWidth;
     this._scene.background = new THREE.Color(0xe2311d);
 
     this._light()
+    document.getElementById("plot_Button").onclick = () => {
 
-    const geometry = new THREE.PlaneGeometry( this.gridHeight+2, this.gridWidth+2 );
-    const material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
-    const plane = new THREE.Mesh( geometry, material );
-    plane.rotateX(-Math.PI / 2);
-    plane.rotateZ(-Math.PI / 2);
-    plane.name = "grid"
-    this._scene.add( plane );
+      this.gridHeight = (parseInt(document.getElementById("gridHeight_Input").valueAsNumber))
+      this.gridWidth = (parseInt(document.getElementById("gridWidth_Input").valueAsNumber))
+      this.startX = (parseInt(document.getElementById("startX_Input").valueAsNumbet))
+      this.startY = (parseInt(document.getElementById("startY_Input").valueAsNumber))
+      this.endX = (parseInt(document.getElementById("endX_Input").valueAsNumber))
+      this.endy = (parseInt(document.getElementById("endY_Input").valueAsNumber))
+      this._camera.position.set(0, this.gridHeight, 0);
 
-    const grid = new THREE.GridHelper(this.gridHeight,this.gridWidth)    
-    grid.position.set(0,.01,0)
-    //this._scene.add(grid)
+      this.drawWall()
+      this.makeGrid()
+      console.log(typeof this.startX,typeof this.startY)
+      this.end = this.grid[this.endX][this.endY]
+      this.start = this.grid[this.startX][this.startY]
+      this.end.makeEnd()
+      this.end.draw()
+      this.start.makeEnd()
+      this.start.draw()
+    }
 
 
 
-    this.drawWall()
-    this.makeGrid()
+
+
+    // this.drawWall()
+    // this.makeGrid()
     // let wall = this.grid[0][1]
 
     // wall.makeWall()
     // wall.draw()
 
-    let start = this.grid[2][2]
-    start.getNeighborsMaze()
-    console.log(start)
-    start.makeStart()
-    start.draw()
+    // let start = this.grid[2][2]
+    // start.getNeighborsMaze()
+    // console.log()
+    // start.makeStart()
+    // start.draw()
 
 
-    let end = this.grid[19][19]
+    // let end = this.grid[19][19]
 
-    end.makeEnd()
-    end.draw()
+    // end.makeEnd()
+    // end.draw()
 
     
 
-    this.bfs(this.grid, start, end)
+    // this.dfs(this.grid, start, end)
     //this.makeMaze(start)
   
 
     const controls = new OrbitControls(
       this._camera, this._threejs.domElement);
     controls.update();
-
-    
-
-
-
 
     this._previousRAF = null;
     this._RAF();
@@ -228,6 +232,16 @@ class Demo {
   }
 
   makeGrid() {
+    const geometry = new THREE.PlaneGeometry( this.gridHeight+2, this.gridWidth+2 );
+    const material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
+    const plane = new THREE.Mesh( geometry, material );
+    plane.rotateX(-Math.PI / 2);
+    plane.rotateZ(-Math.PI / 2);
+    plane.name = "grid"
+    this._scene.add( plane );
+
+    const grid = new THREE.GridHelper(this.gridHeight,this.gridWidth)    
+    grid.position.set(0,.01,0)
     this.grid = [];
     for (let x = 0; x<this.gridWidth; x++) {
       this.grid.push([])
@@ -310,8 +324,12 @@ class Demo {
         this._previousRAF = t;
       }
       
-      this.frameDraw()
-      this.drawpoints()
+      if(this.grid){
+        this.frameDraw()
+        this.drawpoints()
+
+      }
+
       this._RAF();
       this._threejs.render(this._scene, this._camera);
       this._Step(t - this._previousRAF);
@@ -354,8 +372,6 @@ class Point {
   getPosition(){
     return [this.x,this.y]
   }
-
-  
 
   isVisited() {
     return this.visited == true
