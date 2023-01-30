@@ -45,7 +45,7 @@ class Demo {
 
 
     this._camera.render
-
+    this.isMaze = false
     this._scene = new THREE.Scene();
     this.gridHeight;
     this.gridWidth;
@@ -55,31 +55,48 @@ class Demo {
 
     this._light()
     document.getElementById("plot_Button").onclick = () => {
-
-      this.gridHeight = (parseInt(document.getElementById("gridHeight_Input").valueAsNumber))
-      this.gridWidth = (parseInt(document.getElementById("gridWidth_Input").valueAsNumber))
-      const startX = (parseInt(document.getElementById("startX_Input").valueAsNumber))
-      const startY = (parseInt(document.getElementById("startY_Input").valueAsNumber))
-      const endX = (parseInt(document.getElementById("endX_Input").valueAsNumber))
-      const endY = (parseInt(document.getElementById("endY_Input").valueAsNumber))
-
-      this.star
+      if (!this.isMaze) {
+        this.gridHeight = (parseInt(document.getElementById("gridHeight_Input").valueAsNumber))
+        this.gridWidth = (parseInt(document.getElementById("gridWidth_Input").valueAsNumber))
+        const startX = (parseInt(document.getElementById("startX_Input").valueAsNumber))
+        const startY = (parseInt(document.getElementById("startY_Input").valueAsNumber))
+        const endX = (parseInt(document.getElementById("endX_Input").valueAsNumber))
+        const endY = (parseInt(document.getElementById("endY_Input").valueAsNumber))
   
-      
-      this.drawWall()
-      this.makeGrid()
-      this._camera.position.set(0, Math.max(this.gridHeight,this.gridWidth)+5, 0);
 
-      this.start = this.grid[startX]
-      this.start = this.start[startY]
-      this.end = this.grid[endX]
+    
+        
+        this.drawWall()
+        this.makeGrid()
+        this._camera.position.set(0, Math.max(this.gridHeight,this.gridWidth)+5, 0);
+  
+        this.start = this.grid[startX]
+        this.start = this.start[startY]
+        this.end = this.grid[endX]
+  
+        this.end = this.end[endY]
+  
+        this.end.makeEnd()
+        this.end.draw()
+        this.start.makeStart()
+        this.start.draw()
+      }else {
+        const startX = (parseInt(document.getElementById("startX_Input").valueAsNumber))
+        const startY = (parseInt(document.getElementById("startY_Input").valueAsNumber))
+        const endX = (parseInt(document.getElementById("endX_Input").valueAsNumber))
+        const endY = (parseInt(document.getElementById("endY_Input").valueAsNumber))
+        this.start = this.grid[startX]
+        this.start = this.start[startY]
+        this.end = this.grid[endX]
+  
+        this.end = this.end[endY]
+  
+        this.end.makeEnd()
+        this.end.draw()
+        this.start.makeStart()
+        this.start.draw()
+      }
 
-      this.end = this.end[endY]
-
-      this.end.makeEnd()
-      this.end.draw()
-      this.start.makeStart()
-      this.start.draw()
 
     }
     document.getElementById("clear_Button").onclick = () => {
@@ -136,6 +153,15 @@ class Demo {
     this._RAF();
   }
 
+  makeUnvisited() {
+    for (let x = 0; x<this.gridWidth; x++) {
+      for (let y = 0; y<this.gridHeight; y++) {
+        this.grid[x][y].mazeUnvisit()
+
+      } 
+    }
+  }
+
   blackout() {
     for (let x = 0; x<this.gridWidth; x++) {
       for (let y = 0; y<this.gridHeight; y++) {
@@ -146,41 +172,38 @@ class Demo {
   }
 
   makeMaze(vertex) {
+    this.isMaze = true
     this.blackout()
-    this.stack = new Stack()
+    this.stack = []
     this.current = vertex
-    this.maze()
+    let first = true;
+    this.stack.push(this.current) 
+    while (!this.stack.length == 0) {
+      if (first) {
+        this.stack.pop()
+        first = false
+      }
+      this.current.visit()
+      let next = this.current.getNeighborsMaze()
+      let rand = Math.floor(Math.random()*this.current.neighbors.length)
+      next = next[rand]
+      if (next) {
+        next.visit()
+        this.stack.push(this.current) 
+        this.current.mazeReset()
+        this.current.wallbetween[rand].mazeReset()
+        this.current = next
+      } else if (!this.stack.length==0) {
+        this.current.mazeReset()
+        let c = this.stack.pop()
+        this.current = c
+        
+      }
 
-
-  }
-  maze() {
-    console.log(this.grid)
-    this.current.visit()
-    
-    let next = this.current.getNeighborsMaze()
-    console.log(this.current.neighbors.length)
-    let rand = Math.floor(Math.random()*this.current.neighbors.length)
-    console.log(rand)
-    next = next[rand]
-    console.log(this.current.neighbors)
-    if (next) {
-      next.visit()
-      this.stack.add(this.current) 
-      this.current.mazeReset()
-      this.current.wallbetween[rand].mazeReset()
-      this.current = next
-    } else if (!this.stack.isEmpty()) {
-
-      let c = this.stack.remove()
-      this.current = c
-      this.current.mazeReset()
     }
-    if (this.stack.isEmpty()) {
-
-      return
-    }
-    this.maze()
+    this.makeUnvisited()
   }
+
 
   resetGrid() {
     for (let x = 0; x<this.gridWidth; x++) {
@@ -212,13 +235,13 @@ class Demo {
           if (element == end) {
             return
           }
-          console.log()
+
           stack.add(element)
         }
       }
       f++
     }
-    console.log(this.order)
+
   }
 
 
@@ -457,7 +480,14 @@ class Point {
     this.Mesh.material.color.set('white')
     this.isdrawn = false
     this.Mesh.position.y = -.52
+    
     this.visited = false;
+  }
+
+  mazeUnvisit() {
+    this.visited = false;
+    this.neighbors = [];
+    this.wallbetween = []
   }
 
   makeClosed(){
@@ -520,6 +550,8 @@ class Point {
   }
 
   getNeighborsMaze(grid) {
+    this.neighbors = []
+    this.wallbetween = []
     if ((this.row < this.totalRows - 2) &&  (this.grid[this.col][this.row + 2].isWall()))  { // DOWN
       if (!(this.grid[this.col][this.row + 1].isVisited())) {
         this.neighbors.push(this.grid[this.col][this.row + 2])
