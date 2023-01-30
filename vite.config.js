@@ -2,5 +2,5 @@ import { defineConfig } from "vite";
 
 
 export default defineConfig({
-    base: ''
+    base: 'https://purpletomato55.github.io/Path-finder/'
 })
