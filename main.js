@@ -49,6 +49,8 @@ class Demo {
     this._scene = new THREE.Scene();
     this.gridHeight;
     this.gridWidth;
+    this.start;
+    this.end;
     this._scene.background = new THREE.Color(0xe2311d);
 
     this._light()
@@ -56,24 +58,48 @@ class Demo {
 
       this.gridHeight = (parseInt(document.getElementById("gridHeight_Input").valueAsNumber))
       this.gridWidth = (parseInt(document.getElementById("gridWidth_Input").valueAsNumber))
-      this.startX = (parseInt(document.getElementById("startX_Input").valueAsNumbet))
-      this.startY = (parseInt(document.getElementById("startY_Input").valueAsNumber))
-      this.endX = (parseInt(document.getElementById("endX_Input").valueAsNumber))
-      this.endy = (parseInt(document.getElementById("endY_Input").valueAsNumber))
-      this._camera.position.set(0, this.gridHeight, 0);
+      const startX = (parseInt(document.getElementById("startX_Input").valueAsNumber))
+      const startY = (parseInt(document.getElementById("startY_Input").valueAsNumber))
+      const endX = (parseInt(document.getElementById("endX_Input").valueAsNumber))
+      const endY = (parseInt(document.getElementById("endY_Input").valueAsNumber))
 
+      this.star
+  
+      
       this.drawWall()
       this.makeGrid()
-      console.log(typeof this.startX,typeof this.startY)
-      this.end = this.grid[this.endX][this.endY]
-      this.start = this.grid[this.startX][this.startY]
+      this._camera.position.set(0, Math.max(this.gridHeight,this.gridWidth)+5, 0);
+
+      this.start = this.grid[startX]
+      this.start = this.start[startY]
+      this.end = this.grid[endX]
+
+      this.end = this.end[endY]
+
       this.end.makeEnd()
       this.end.draw()
-      this.start.makeEnd()
+      this.start.makeStart()
       this.start.draw()
+
     }
+    document.getElementById("clear_Button").onclick = () => {
+      this.resetGrid()
+    }
+    document.getElementById("start_Button").onclick = () => {
+      this.searchAlgo = (document.getElementById("cars").value)
+      if (this.searchAlgo == "DFS") {
+        this.dfs(this.grid, this.start, this.end)
+      }else if (this.searchAlgo == "BFS") {
+        this.bfs(this.grid, this.start, this.end)
+      }else {
+        
+      }
+      console.log(this.searchAlgo)
 
-
+    }
+    document.getElementById("maze_Button").onclick = () => {
+      this.makeMaze(this.grid[0][0])
+    }
 
 
 
@@ -120,33 +146,40 @@ class Demo {
   }
 
   makeMaze(vertex) {
-    let f = 0
-    let stack = new Stack()
-    stack.add(vertex)
     this.blackout()
-    vertex.visit()
-    vertex.reset()
-    while (!stack.isEmpty()) {
-      let cur_node=stack.remove()
-      cur_node.getNeighborsMaze()
-      let hasNeighbors = false
-      let nonVisitedNeighbors = []
-      for (let i = 0; i < cur_node.neighbors.length; i++) {
-        const element = cur_node.neighbors[i];
-        if (!element.isVisited()) {
-          hasNeighbors=true
-          nonVisitedNeighbors.push(i)
-        }     
-      }
-      if (hasNeighbors) {
-        stack.add(cur_node)
-        let num = Math.floor(Math.random()*nonVisitedNeighbors.length) 
-        let neigh = cur_node.neighbors[num]
-        cur_node.wallbetween[num].reset()
-        neigh.visit()
-        stack.add(neigh)
-      }
+    this.stack = new Stack()
+    this.current = vertex
+    this.maze()
+
+
+  }
+  maze() {
+    console.log(this.grid)
+    this.current.visit()
+    
+    let next = this.current.getNeighborsMaze()
+    console.log(this.current.neighbors.length)
+    let rand = Math.floor(Math.random()*this.current.neighbors.length)
+    console.log(rand)
+    next = next[rand]
+    console.log(this.current.neighbors)
+    if (next) {
+      next.visit()
+      this.stack.add(this.current) 
+      this.current.mazeReset()
+      this.current.wallbetween[rand].mazeReset()
+      this.current = next
+    } else if (!this.stack.isEmpty()) {
+
+      let c = this.stack.remove()
+      this.current = c
+      this.current.mazeReset()
     }
+    if (this.stack.isEmpty()) {
+
+      return
+    }
+    this.maze()
   }
 
   resetGrid() {
@@ -412,6 +445,13 @@ class Point {
     this.Mesh.position.y = -.52
   }
 
+  mazeReset() {
+    this.color = WHITE
+    this.Mesh.material.color.set('white')
+    this.isdrawn = false
+    this.Mesh.position.y = -.52
+  }
+
   reset() {
     this.color = WHITE
     this.Mesh.material.color.set('white')
@@ -480,24 +520,34 @@ class Point {
   }
 
   getNeighborsMaze(grid) {
-    if ((this.row < this.totalRows - 2) &&  (!this.grid[this.col][this.row + 2].isWall()))  { // DOWN
-      this.neighbors.push(this.grid[this.col][this.row + 2])
-      this.wallbetween.push(this.grid[this.col][this.row + 1])
+    if ((this.row < this.totalRows - 2) &&  (this.grid[this.col][this.row + 2].isWall()))  { // DOWN
+      if (!(this.grid[this.col][this.row + 1].isVisited())) {
+        this.neighbors.push(this.grid[this.col][this.row + 2])
+        this.wallbetween.push(this.grid[this.col][this.row + 1])
+      }
     }
 
-    if ((this.row > 0) &&  (!this.grid[this.col][this.row - 2].isWall())) { // UP
-      this.neighbors.push(this.grid[this.col][this.row - 2])
-      this.wallbetween.push(this.grid[this.col][this.row - 1])
+    if ((this.row > 0) &&  (this.grid[this.col][this.row - 2].isWall())) { // UP
+      if(!(this.grid[this.col][this.row - 1].isVisited())) {
+        this.neighbors.push(this.grid[this.col][this.row - 2])
+        this.wallbetween.push(this.grid[this.col][this.row - 1])
+      }
+
     }
 
-    if ((this.col < this.totalCols - 1) &&  (!this.grid[this.col + 2][this.row].isWall())) { // RIGHT
-      this.neighbors.push(this.grid[this.col + 2][this.row])
-      this.wallbetween.push(this.grid[this.col + 1][this.row])
+    if ((this.col < this.totalCols - 2) &&  (this.grid[this.col + 2][this.row].isWall())) { // RIGHT
+      if (!(this.grid[this.col+1][this.row].isVisited())) {
+        this.neighbors.push(this.grid[this.col + 2][this.row])
+        this.wallbetween.push(this.grid[this.col + 1][this.row])
+      }
     }
 
-    if ((this.col > 0) && (!this.grid[this.col-2][this.row].isWall())) { // LEFT
-      this.neighbors.push(this.grid[this.col - 2][this.row])
-      this.wallbetween.push(this.grid[this.col - 1][this.row])
+    if ((this.col > 0) && (this.grid[this.col-2][this.row].isWall())) { // LEFT
+      if (!(this.grid[this.col-1][this.row].isVisited())) {
+        this.neighbors.push(this.grid[this.col - 2][this.row])
+        this.wallbetween.push(this.grid[this.col - 1][this.row])
+      }
+
     }
     return this.neighbors
   }
