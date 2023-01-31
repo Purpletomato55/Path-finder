@@ -51,6 +51,7 @@ class Demo {
     this.gridWidth;
     this.start;
     this.end;
+    this.speed = 3
     this._scene.background = new THREE.Color(0xe2311d);
 
     this._light()
@@ -256,14 +257,19 @@ class Demo {
     while (!queue.isEmpty()) {
       let cur_node = queue.dequeue().element
       cur_node.getNeighbors()
-      this.order.push([])
+      console.log(Math.floor(f/this.speed))
+      let drawCondition = (f%this.speed == 0)
+      if (drawCondition) {
+        this.order.push([])
+      }
+
       let b = false
       for (let i = 0; i < cur_node.neighbors.length; i++) {
         const element = cur_node.neighbors[i];
         if (!element.isVisited()) {
           element.visit()
           element.makeOpen()
-          this.order[f].push(element)
+          this.order[Math.floor(f/this.speed)].push(element)
           queue.enqueue(element)
           element.prev = cur_node
           if (element == end){
@@ -374,7 +380,8 @@ class Demo {
       this.order
       THREE.CompressedPixelFormat;
       if (true) {
-        let greenNum = 20
+
+        let greenNum = 10
         if(this.iterator >greenNum) {
           for (let x = 0; x<this.order[this.iterator-greenNum].length;x++) {
             this.order[this.iterator-greenNum][x].makeClosed()
@@ -384,6 +391,7 @@ class Demo {
         for (let x = 0; x<this.order[this.iterator].length;x++) {
           
           this.order[this.iterator][x].draw()
+
 
         }
         this.iterator++
