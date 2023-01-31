@@ -45,35 +45,79 @@ class Demo {
 
 
     this._camera.render
-
+    this.isMaze = false
     this._scene = new THREE.Scene();
     this.gridHeight;
     this.gridWidth;
+    this.start;
+    this.end;
+    this.speed = 3
     this._scene.background = new THREE.Color(0xe2311d);
 
     this._light()
     document.getElementById("plot_Button").onclick = () => {
+      if (!this.isMaze) {
+        this.gridHeight = (parseInt(document.getElementById("gridHeight_Input").valueAsNumber))
+        this.gridWidth = (parseInt(document.getElementById("gridWidth_Input").valueAsNumber))
+        const startX = (parseInt(document.getElementById("startX_Input").valueAsNumber))
+        const startY = (parseInt(document.getElementById("startY_Input").valueAsNumber))
+        const endX = (parseInt(document.getElementById("endX_Input").valueAsNumber))
+        const endY = (parseInt(document.getElementById("endY_Input").valueAsNumber))
+  
 
-      this.gridHeight = (parseInt(document.getElementById("gridHeight_Input").valueAsNumber))
-      this.gridWidth = (parseInt(document.getElementById("gridWidth_Input").valueAsNumber))
-      this.startX = (parseInt(document.getElementById("startX_Input").valueAsNumbet))
-      this.startY = (parseInt(document.getElementById("startY_Input").valueAsNumber))
-      this.endX = (parseInt(document.getElementById("endX_Input").valueAsNumber))
-      this.endy = (parseInt(document.getElementById("endY_Input").valueAsNumber))
-      this._camera.position.set(0, this.gridHeight, 0);
+    
+        
+        this.drawWall()
+        this.makeGrid()
+        this._camera.position.set(0, Math.max(this.gridHeight,this.gridWidth)+5, 0);
+  
+        this.start = this.grid[startX]
+        this.start = this.start[startY]
+        this.end = this.grid[endX]
+  
+        this.end = this.end[endY]
+  
+        this.end.makeEnd()
+        this.end.draw()
+        this.start.makeStart()
+        this.start.draw()
+      }else {
+        const startX = (parseInt(document.getElementById("startX_Input").valueAsNumber))
+        const startY = (parseInt(document.getElementById("startY_Input").valueAsNumber))
+        const endX = (parseInt(document.getElementById("endX_Input").valueAsNumber))
+        const endY = (parseInt(document.getElementById("endY_Input").valueAsNumber))
+        this.start = this.grid[startX]
+        this.start = this.start[startY]
+        this.end = this.grid[endX]
+  
+        this.end = this.end[endY]
+  
+        this.end.makeEnd()
+        this.end.draw()
+        this.start.makeStart()
+        this.start.draw()
+      }
 
-      this.drawWall()
-      this.makeGrid()
-      console.log(typeof this.startX,typeof this.startY)
-      this.end = this.grid[this.endX][this.endY]
-      this.start = this.grid[this.startX][this.startY]
-      this.end.makeEnd()
-      this.end.draw()
-      this.start.makeEnd()
-      this.start.draw()
+
     }
+    document.getElementById("clear_Button").onclick = () => {
+      this.resetGrid()
+    }
+    document.getElementById("start_Button").onclick = () => {
+      this.searchAlgo = (document.getElementById("cars").value)
+      if (this.searchAlgo == "DFS") {
+        this.dfs(this.grid, this.start, this.end)
+      }else if (this.searchAlgo == "BFS") {
+        this.bfs(this.grid, this.start, this.end)
+      }else {
+        
+      }
+      console.log(this.searchAlgo)
 
-
+    }
+    document.getElementById("maze_Button").onclick = () => {
+      this.makeMaze(this.grid[0][0])
+    }
 
 
 
@@ -110,6 +154,15 @@ class Demo {
     this._RAF();
   }
 
+  makeUnvisited() {
+    for (let x = 0; x<this.gridWidth; x++) {
+      for (let y = 0; y<this.gridHeight; y++) {
+        this.grid[x][y].mazeUnvisit()
+
+      } 
+    }
+  }
+
   blackout() {
     for (let x = 0; x<this.gridWidth; x++) {
       for (let y = 0; y<this.gridHeight; y++) {
@@ -120,34 +173,38 @@ class Demo {
   }
 
   makeMaze(vertex) {
-    let f = 0
-    let stack = new Stack()
-    stack.add(vertex)
+    this.isMaze = true
     this.blackout()
-    vertex.visit()
-    vertex.reset()
-    while (!stack.isEmpty()) {
-      let cur_node=stack.remove()
-      cur_node.getNeighborsMaze()
-      let hasNeighbors = false
-      let nonVisitedNeighbors = []
-      for (let i = 0; i < cur_node.neighbors.length; i++) {
-        const element = cur_node.neighbors[i];
-        if (!element.isVisited()) {
-          hasNeighbors=true
-          nonVisitedNeighbors.push(i)
-        }     
+    this.stack = []
+    this.current = vertex
+    let first = true;
+    this.stack.push(this.current) 
+    while (!this.stack.length == 0) {
+      if (first) {
+        this.stack.pop()
+        first = false
       }
-      if (hasNeighbors) {
-        stack.add(cur_node)
-        let num = Math.floor(Math.random()*nonVisitedNeighbors.length) 
-        let neigh = cur_node.neighbors[num]
-        cur_node.wallbetween[num].reset()
-        neigh.visit()
-        stack.add(neigh)
+      this.current.visit()
+      let next = this.current.getNeighborsMaze()
+      let rand = Math.floor(Math.random()*this.current.neighbors.length)
+      next = next[rand]
+      if (next) {
+        next.visit()
+        this.stack.push(this.current) 
+        this.current.mazeReset()
+        this.current.wallbetween[rand].mazeReset()
+        this.current = next
+      } else if (!this.stack.length==0) {
+        this.current.mazeReset()
+        let c = this.stack.pop()
+        this.current = c
+        
       }
+
     }
+    this.makeUnvisited()
   }
+
 
   resetGrid() {
     for (let x = 0; x<this.gridWidth; x++) {
@@ -179,13 +236,13 @@ class Demo {
           if (element == end) {
             return
           }
-          console.log()
+
           stack.add(element)
         }
       }
       f++
     }
-    console.log(this.order)
+
   }
 
 
@@ -200,25 +257,45 @@ class Demo {
     while (!queue.isEmpty()) {
       let cur_node = queue.dequeue().element
       cur_node.getNeighbors()
-      this.order.push([])
+      console.log(Math.floor(f/this.speed))
+      let drawCondition = (f%this.speed == 0)
+      if (drawCondition) {
+        this.order.push([])
+      }
+
+      let b = false
       for (let i = 0; i < cur_node.neighbors.length; i++) {
         const element = cur_node.neighbors[i];
         if (!element.isVisited()) {
-          if (element == end) {
-            return
-          }
           element.visit()
           element.makeOpen()
-          this.order[f].push(element)
+          this.order[Math.floor(f/this.speed)].push(element)
           queue.enqueue(element)
-          
+          element.prev = cur_node
+          if (element == end){
+            b = true
+          }
         }
       }
-
-
+      if (b==true) {
+        break;
+      }
       f++
-
     }
+    let stack = [];
+    stack.push(end)
+    let u  = end.prev
+    while(u.prev) {
+      stack.push(u)
+      u = u.prev
+      console.log(u)
+    }
+    stack.push(vertex)
+
+
+    this.path = stack
+
+    console.log(this.path.length)
   }
 
   drawpoints() {
@@ -289,12 +366,22 @@ class Demo {
     this._scene.add(this.dirLight);
   }
 
+  makePath() {
+    if (this.path) {
+      for (let i = 0; i < this.path.length; i++) {
+        const element = this.path[i];
+        element.makePath()
+      }
+    }
+  }
+
   frameDraw() {
     if(this.order && (this.iterator<this.order.length)) {
       this.order
       THREE.CompressedPixelFormat;
       if (true) {
-        let greenNum = 20
+
+        let greenNum = 10
         if(this.iterator >greenNum) {
           for (let x = 0; x<this.order[this.iterator-greenNum].length;x++) {
             this.order[this.iterator-greenNum][x].makeClosed()
@@ -305,12 +392,13 @@ class Demo {
           
           this.order[this.iterator][x].draw()
 
+
         }
         this.iterator++
       }
       
     }else{
-
+      this.makePath()
     }
 
     this.frameNum++
@@ -366,6 +454,7 @@ class Point {
     this.grid = grid
     this.visited = false
     this.wallbetween = []
+    this.prev;
     this.make()
   }
 
@@ -412,12 +501,26 @@ class Point {
     this.Mesh.position.y = -.52
   }
 
+  mazeReset() {
+    this.color = WHITE
+    this.Mesh.material.color.set('white')
+    this.isdrawn = false
+    this.Mesh.position.y = -.52
+  }
+
   reset() {
     this.color = WHITE
     this.Mesh.material.color.set('white')
     this.isdrawn = false
     this.Mesh.position.y = -.52
+    
     this.visited = false;
+  }
+
+  mazeUnvisit() {
+    this.visited = false;
+    this.neighbors = [];
+    this.wallbetween = []
   }
 
   makeClosed(){
@@ -480,24 +583,36 @@ class Point {
   }
 
   getNeighborsMaze(grid) {
-    if ((this.row < this.totalRows - 2) &&  (!this.grid[this.col][this.row + 2].isWall()))  { // DOWN
-      this.neighbors.push(this.grid[this.col][this.row + 2])
-      this.wallbetween.push(this.grid[this.col][this.row + 1])
+    this.neighbors = []
+    this.wallbetween = []
+    if ((this.row < this.totalRows - 2) &&  (this.grid[this.col][this.row + 2].isWall()))  { // DOWN
+      if (!(this.grid[this.col][this.row + 1].isVisited())) {
+        this.neighbors.push(this.grid[this.col][this.row + 2])
+        this.wallbetween.push(this.grid[this.col][this.row + 1])
+      }
     }
 
-    if ((this.row > 0) &&  (!this.grid[this.col][this.row - 2].isWall())) { // UP
-      this.neighbors.push(this.grid[this.col][this.row - 2])
-      this.wallbetween.push(this.grid[this.col][this.row - 1])
+    if ((this.row > 0) &&  (this.grid[this.col][this.row - 2].isWall())) { // UP
+      if(!(this.grid[this.col][this.row - 1].isVisited())) {
+        this.neighbors.push(this.grid[this.col][this.row - 2])
+        this.wallbetween.push(this.grid[this.col][this.row - 1])
+      }
+
     }
 
-    if ((this.col < this.totalCols - 1) &&  (!this.grid[this.col + 2][this.row].isWall())) { // RIGHT
-      this.neighbors.push(this.grid[this.col + 2][this.row])
-      this.wallbetween.push(this.grid[this.col + 1][this.row])
+    if ((this.col < this.totalCols - 2) &&  (this.grid[this.col + 2][this.row].isWall())) { // RIGHT
+      if (!(this.grid[this.col+1][this.row].isVisited())) {
+        this.neighbors.push(this.grid[this.col + 2][this.row])
+        this.wallbetween.push(this.grid[this.col + 1][this.row])
+      }
     }
 
-    if ((this.col > 0) && (!this.grid[this.col-2][this.row].isWall())) { // LEFT
-      this.neighbors.push(this.grid[this.col - 2][this.row])
-      this.wallbetween.push(this.grid[this.col - 1][this.row])
+    if ((this.col > 0) && (this.grid[this.col-2][this.row].isWall())) { // LEFT
+      if (!(this.grid[this.col-1][this.row].isVisited())) {
+        this.neighbors.push(this.grid[this.col - 2][this.row])
+        this.wallbetween.push(this.grid[this.col - 1][this.row])
+      }
+
     }
     return this.neighbors
   }
