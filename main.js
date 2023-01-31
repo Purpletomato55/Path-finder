@@ -257,24 +257,39 @@ class Demo {
       let cur_node = queue.dequeue().element
       cur_node.getNeighbors()
       this.order.push([])
+      let b = false
       for (let i = 0; i < cur_node.neighbors.length; i++) {
         const element = cur_node.neighbors[i];
         if (!element.isVisited()) {
-          if (element == end) {
-            return
-          }
           element.visit()
           element.makeOpen()
           this.order[f].push(element)
           queue.enqueue(element)
-          
+          element.prev = cur_node
+          if (element == end){
+            b = true
+          }
         }
       }
-
-
+      if (b==true) {
+        break;
+      }
       f++
-
     }
+    let stack = [];
+    stack.push(end)
+    let u  = end.prev
+    while(u.prev) {
+      stack.push(u)
+      u = u.prev
+      console.log(u)
+    }
+    stack.push(vertex)
+
+
+    this.path = stack
+
+    console.log(this.path.length)
   }
 
   drawpoints() {
@@ -345,6 +360,15 @@ class Demo {
     this._scene.add(this.dirLight);
   }
 
+  makePath() {
+    if (this.path) {
+      for (let i = 0; i < this.path.length; i++) {
+        const element = this.path[i];
+        element.makePath()
+      }
+    }
+  }
+
   frameDraw() {
     if(this.order && (this.iterator<this.order.length)) {
       this.order
@@ -366,7 +390,7 @@ class Demo {
       }
       
     }else{
-
+      this.makePath()
     }
 
     this.frameNum++
@@ -422,6 +446,7 @@ class Point {
     this.grid = grid
     this.visited = false
     this.wallbetween = []
+    this.prev;
     this.make()
   }
 
