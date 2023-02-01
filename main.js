@@ -47,28 +47,42 @@ class Demo {
     this._camera.render
     this.isMaze = false
     this._scene = new THREE.Scene();
-    this.gridHeight;
-    this.gridWidth;
+    this.gridHeight= 19;
+    this.gridWidth= 19;
     this.start;
     this.end;
-    this.speed = 3
+    this.speed = 1
+    this.placeholder = true
     this._scene.background = new THREE.Color(0xe2311d);
 
     this._light()
     document.getElementById("plot_Button").onclick = () => {
       if (!this.isMaze) {
+        for (let x = 0; x<this.gridWidth; x++) {
+          for (let y = 0; y<this.gridHeight; y++) {
+            this._scene.remove(this.grid[x][y].Mesh)
+    
+          } 
+        }
+        this._scene.remove(this.plane)
+        for (let i = 0; i < this.wallMesh.length; i++) {
+          const element = this.wallMesh[i];
+          this._scene.remove(element)
+          
+        }
+        delete this.grid
         this.gridHeight = (parseInt(document.getElementById("gridHeight_Input").valueAsNumber))
         this.gridWidth = (parseInt(document.getElementById("gridWidth_Input").valueAsNumber))
         const startX = (parseInt(document.getElementById("startX_Input").valueAsNumber))
         const startY = (parseInt(document.getElementById("startY_Input").valueAsNumber))
         const endX = (parseInt(document.getElementById("endX_Input").valueAsNumber))
         const endY = (parseInt(document.getElementById("endY_Input").valueAsNumber))
-  
-
-    
         
         this.drawWall()
         this.makeGrid()
+    
+        
+
         this._camera.position.set(0, Math.max(this.gridHeight,this.gridWidth)+5, 0);
   
         this.start = this.grid[startX]
@@ -82,6 +96,8 @@ class Demo {
         this.start.makeStart()
         this.start.draw()
       }else {
+        this.end.mazeReset()
+        this.start.mazeReset()
         const startX = (parseInt(document.getElementById("startX_Input").valueAsNumber))
         const startY = (parseInt(document.getElementById("startY_Input").valueAsNumber))
         const endX = (parseInt(document.getElementById("endX_Input").valueAsNumber))
@@ -101,9 +117,21 @@ class Demo {
 
     }
     document.getElementById("clear_Button").onclick = () => {
+      this.isMaze = false
       this.resetGrid()
+      this.iterator = 0
+      delete this.path
+      this.order = []
     }
     document.getElementById("start_Button").onclick = () => {
+      const speed = (document.getElementById("cars1").value)
+      if (speed == "1") {
+        this.speed = 1
+      }else if (speed == "2") {
+        this.speed = 2
+      }else {
+        this.speed = 3
+      }
       this.searchAlgo = (document.getElementById("cars").value)
       if (this.searchAlgo == "DFS") {
         this.dfs(this.grid, this.start, this.end)
@@ -112,7 +140,7 @@ class Demo {
       }else {
         
       }
-      console.log(this.searchAlgo)
+
 
     }
     document.getElementById("maze_Button").onclick = () => {
@@ -144,7 +172,23 @@ class Demo {
 
     // this.dfs(this.grid, start, end)
     //this.makeMaze(start)
-  
+    this._camera.position.set(0, Math.max(this.gridHeight,this.gridWidth)+5, 0);
+    console.log(this._camera)
+
+    this.drawWall()
+    this.makeGrid()
+    
+    this.start = this.grid[0][0]
+    this.end = this.grid[18][18]
+
+
+
+    this.end.makeEnd()
+    this.end.draw()
+    this.start.makeStart()
+    this.start.draw()
+
+
 
     const controls = new OrbitControls(
       this._camera, this._threejs.domElement);
@@ -202,6 +246,10 @@ class Demo {
       }
 
     }
+    this.start.makeStart()
+    this.start.draw()
+    this.end.makeEnd()
+    this.end.draw()
     this.makeUnvisited()
   }
 
@@ -221,9 +269,12 @@ class Demo {
     stack.add(vertex)
     while (!stack.isEmpty()) {
       let cur_node=stack.remove()
-      this.order.push([])
+      let drawCondition = (f%this.speed == 0)
+      if (drawCondition) {
+        this.order.push([])
+      }
       if (cur_node!=vertex) {
-        this.order[f].push(cur_node)
+        this.order[Math.floor(f/this.speed)].push(cur_node)
       }
       if (!cur_node.isVisited()) {
         cur_node.visit()
@@ -311,11 +362,11 @@ class Demo {
   makeGrid() {
     const geometry = new THREE.PlaneGeometry( this.gridHeight+2, this.gridWidth+2 );
     const material = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide} );
-    const plane = new THREE.Mesh( geometry, material );
-    plane.rotateX(-Math.PI / 2);
-    plane.rotateZ(-Math.PI / 2);
-    plane.name = "grid"
-    this._scene.add( plane );
+    this.plane = new THREE.Mesh( geometry, material );
+    this.plane.rotateX(-Math.PI / 2);
+    this.plane.rotateZ(-Math.PI / 2);
+    this.plane.name = "grid"
+    this._scene.add( this.plane );
 
     const grid = new THREE.GridHelper(this.gridHeight,this.gridWidth)    
     grid.position.set(0,.01,0)
@@ -331,6 +382,7 @@ class Demo {
   }
 
   drawWall() {
+    this.wallMesh = []
     for (let x = -1; x<=this.gridWidth; x++){
       for (let y = -1; y<=this.gridHeight; y++) {
         if ((x == -1)||(y==-1)||(x == this.gridWidth)||(y == this.gridHeight)){
@@ -338,6 +390,7 @@ class Demo {
           const wallmaterial = new THREE.MeshBasicMaterial( {color: 0x000000} );
           const wallMesh = new THREE.Mesh( wallgeometry, wallmaterial );
           wallMesh.position.set(x-(this.gridWidth/2)+.5, 0.5, -y+(this.gridHeight/2)-.5)
+          this.wallMesh.push(wallMesh)
           this._scene.add(wallMesh)  
         }
       }

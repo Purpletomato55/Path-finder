@@ -20,14 +20,20 @@
       <input type="number" id="endX_Input" name="endX_Input"  min="0" inputmode="numeric" pattern="[0-9]*"><br>
       <label for="endY_Input">End Y:</label>
       <input type="number" id="endY_Input" name="endY_Input"  m min="0" inputmode="numeric" pattern="[0-9]*"><br>
+      <label for="speed_Input">Speed:</label>
+      <select name="cars1" id="cars1">
+        <option value="1">x1</option>
+        <option value="2">x2</option>
+        <option value="3">x3</option>
+      </select><br>      
       <select name="cars" id="cars">
         <option value="DFS">Deapth-First Search</option>
         <option value="BFS">Breadth-First Search</option>
         <option value="Djikstra">Djikstra's</option>
       </select>
-      <button id="clear_Button">Clear</button>
+      <button id="clear_Button">Clear Maze</button>
       <br>
-      <button id="maze_Button">generateMaze</button>
+      <button id="maze_Button">Generate Maze</button>
       <button id="plot_Button">Plot</button>
       <button type="button" id="start_Button">Start</button>
     </div>
