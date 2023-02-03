@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { QElement, PriorityQueue, Stack } from './queue'
+import { MinPriorityQueue } from '@datastructures-js/priority-queue'
 
 let RED = {color: 0xff0000}
 let GREEN = {color: 0x00ff00}
@@ -138,7 +139,7 @@ class Demo {
       }else if (this.searchAlgo == "BFS") {
         this.bfs(this.grid, this.start, this.end)
       }else {
-        
+        this.dijkstras(this.start, this.end)
       }
 
 
@@ -173,7 +174,7 @@ class Demo {
     // this.dfs(this.grid, start, end)
     //this.makeMaze(start)
     this._camera.position.set(0, Math.max(this.gridHeight,this.gridWidth)+5, 0);
-    console.log(this._camera)
+ 
 
     this.drawWall()
     this.makeGrid()
@@ -263,6 +264,84 @@ class Demo {
     }
   }
 
+  getMin(Q){
+    let min = 1020002999
+    let y;
+    let m;
+    for (let x = 0; x<Q.length; x++) {
+        const element = Q[x]
+        if (element.dist<min) {
+          min = element.dist
+          m = element
+          y=x
+        }        
+    }
+    return m
+    this.dij = y
+  }
+
+  dijkstras(vertex, end) {
+    vertex.dist = 0
+    let Q = new MinPriorityQueue((value) => value.dist)
+    let f = 0
+
+    for (let x = 0; x<this.gridWidth; x++) {
+      for (let y = 0; y<this.gridHeight; y++) {
+        if (this.grid[x][y]!=vertex) {
+          this.grid[x][y].dist=12399404
+
+        }
+      } 
+    }
+
+    Q.push(vertex) 
+
+    while (!Q.isEmpty()) {
+      let cur_node = Q.pop()
+      let drawCondition = (f%this.speed == 0)
+      if (drawCondition) {
+        this.order.push([])
+      }
+      if (cur_node == end) {
+        
+        let stack = [];
+        stack.push(end)
+        let u  = end.prev
+
+        while(u.prev) {
+          stack.push(u)
+          u = u.prev
+
+        }
+        stack.push(vertex)
+
+
+        this.path = stack
+
+        return
+      }
+      cur_node.getNeighbors()
+      for (let i = 0; i < cur_node.neighbors.length; i++) {
+        const element = cur_node.neighbors[i];
+        let alt = cur_node.dist+1
+        if (alt < element.dist) {
+          element.dist=alt
+          element.prev = cur_node
+          if (!Q.toArray().includes(element)) {
+            Q.push(element)
+            element.makeOpen()
+            this.order[Math.floor(f/this.speed)].push(element)
+          }
+        }
+        
+      }
+
+      f++;
+    }
+
+    
+  }
+
   dfs(graph,vertex,end) {
     let f = 0
     let stack = new Stack()
@@ -308,7 +387,7 @@ class Demo {
     while (!queue.isEmpty()) {
       let cur_node = queue.dequeue().element
       cur_node.getNeighbors()
-      console.log(Math.floor(f/this.speed))
+
       let drawCondition = (f%this.speed == 0)
       if (drawCondition) {
         this.order.push([])
@@ -339,14 +418,14 @@ class Demo {
     while(u.prev) {
       stack.push(u)
       u = u.prev
-      console.log(u)
+
     }
     stack.push(vertex)
 
 
     this.path = stack
 
-    console.log(this.path.length)
+
   }
 
   drawpoints() {
@@ -433,33 +512,24 @@ class Demo {
       this.order
       THREE.CompressedPixelFormat;
       if (true) {
-
         let greenNum = 10
         if(this.iterator >greenNum) {
           for (let x = 0; x<this.order[this.iterator-greenNum].length;x++) {
             this.order[this.iterator-greenNum][x].makeClosed()
           }
         }
-
         for (let x = 0; x<this.order[this.iterator].length;x++) {
-          
           this.order[this.iterator][x].draw()
-
-
         }
         this.iterator++
-      }
-      
+      } 
     }else{
       this.makePath()
     }
-
     this.frameNum++
   }
 
   _RAF() {
-
-
     requestAnimationFrame((t) => {
       if (this._previousRAF === null) {
         this._previousRAF = t;
@@ -508,6 +578,7 @@ class Point {
     this.visited = false
     this.wallbetween = []
     this.prev;
+    this.dist;
     this.make()
   }
 
